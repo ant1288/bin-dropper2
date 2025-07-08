@@ -1,72 +1,41 @@
 export default async function handler(req, res) {
-  const { barcode, bin } = req.query;
+  const { barcode } = req.query;
 
   if (!barcode) {
     return res.status(400).json({ error: "Barcode is required" });
   }
 
-  const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
-  const adminToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
+  const domain = process.env.SHOPIFY_STORE_DOMAIN;
+  const token = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
   try {
-    // Step 1: Find the variant using the barcode
-    const variantRes = await fetch(`https://${storeDomain}/admin/api/2023-04/variants.json?barcode=${barcode}`, {
+    const response = await fetch(`https://${domain}/admin/api/2024-01/products.json?fields=id,title,images,variants`, {
       headers: {
-        'X-Shopify-Access-Token': adminToken,
-        'Content-Type': 'application/json'
-      }
+        "X-Shopify-Access-Token": token,
+        "Content-Type": "application/json",
+      },
     });
 
-    const variantData = await variantRes.json();
-    const variant = variantData.variants?.[0];
+    const data = await response.json();
+    const products = data.products;
 
-    if (!variant) {
-      return res.status(404).json({ error: "Variant not found" });
+    const product = products.find((product) =>
+      product.variants.some((variant) => variant.barcode === barcode)
+    );
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
     }
 
-    const productId = variant.product_id;
+    const variant = product.variants.find((v) => v.barcode === barcode);
 
-    // Step 2: Fetch the product details
-    const productRes = await fetch(`https://${storeDomain}/admin/api/2023-04/products/${productId}.json`, {
-      headers: {
-        'X-Shopify-Access-Token': adminToken,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const { product } = await productRes.json();
-
-    // Step 3: If a new bin is submitted, update the metafield
-    if (bin) {
-      await fetch(`https://${storeDomain}/admin/api/2023-04/metafields.json`, {
-        method: 'POST',
-        headers: {
-          'X-Shopify-Access-Token': adminToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          metafield: {
-            namespace: 'custom',
-            key: 'bin_location',
-            value: bin,
-            type: 'single_line_text_field',
-            owner_id: product.id,
-            owner_resource: 'product'
-          }
-        })
-      });
-    }
-
-    return res.status(200).json({
+    res.status(200).json({
       title: product.title,
-      image: product.image?.src,
-      bin: bin || "Not set"
+      image: product.images[0]?.src || null,
+      bin: variant?.metafield?.value || "Not set",
     });
-
-  } catch (err) {
-    console.error("Error:", err);
-    return res.status(500).json({ error: "Internal Server Error" });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ error: "Failed to fetch product" });
   }
-}
-
 }
