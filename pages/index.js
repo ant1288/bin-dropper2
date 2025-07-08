@@ -57,7 +57,7 @@ export default function Home() {
 
           <input
             type="text"
-            placeholder="Enter bin location"
+            placeholder="Enter bin locations"
             value={bin}
             onChange={(e) => setBin(e.target.value)}
             style={{ marginRight: '1rem' }}
