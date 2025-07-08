@@ -19,6 +19,11 @@ export default async function handler(req, res) {
         'X-Shopify-Access-Token': token,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        metafield: {
-          namespace: 'custom',
+     body: JSON.stringify({
+  metafield: {
+    namespace: 'custom',
+    key: 'bin_locations', // matches your metafield definition
+    type: 'list.single_line_text_field',
+    value: JSON.stringify([bin]), // wraps the bin in an array to store it as a list
+  },
+}),
