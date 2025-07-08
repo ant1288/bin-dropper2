@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const variant = product.variants.find((v) => v.barcode === barcode);
 
     // Step 2: Set metafield
-    const metafieldRes = await fetch(`https://${shop}/admin/api/2024-01/variants/${variant.id}/metafields.json`, {
+    const metafieldRes = await fetch(`https://${shop}/admin/api/2024-01/products/${product.id}/metafields.json`, {
       method: 'POST',
       headers: {
         'X-Shopify-Access-Token': token,
